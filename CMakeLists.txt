@@ -13,6 +13,13 @@ set(EXTRA_COMPONENT_DIRS
 )
 
 add_compile_options(-fdiagnostics-color=always)
+
+include_directories($ENV{IDF_PATH}/components/esp_psram/include)
+include_directories($ENV{IDF_PATH}/components/esp_timer/include)
+include_directories($ENV{IDF_PATH}/components/esp_hw_support/include/esp_private)
+include_directories($ENV{IDF_PATH}/components/esp_rom/include)
+
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(wifi_enterprise)
 target_add_binary_data(${CMAKE_PROJECT_NAME}.elf "main/certs/root_cert_auth.crt" TEXT)

@@ -17,6 +17,8 @@
 #include "esp_heap_caps.h"
 #include "ll_cam.h"
 #include "cam_hal.h"
+#include "esp_timer.h"
+
 
 static const char *TAG = "cam_hal";
 
@@ -32,7 +34,7 @@ static int cam_verify_jpeg_soi(const uint8_t *inbuf, uint32_t length)
         for (uint32_t i = 0; i < length; i++) {
             sig = *((uint32_t *)(&inbuf[i])) & 0xFFFFFF;
             if (sig == JPEG_SOI_MARKER) {
-                ESP_LOGW(TAG, "SOI: %d", i);
+                ESP_LOGW(TAG, "SOI: %lu", (unsigned long)i);
                 return i;
             }
         }
@@ -179,7 +181,7 @@ static void cam_task(void *arg)
                         } else if (!cam_obj->jpeg_mode) {
                             if (frame_buffer_event->len != cam_obj->fb_size) {
                                 cam_obj->frames[frame_pos].en = 1;
-                                ESP_LOGE(TAG, "FB-SIZE: %u != %u", frame_buffer_event->len, cam_obj->fb_size);
+                                ESP_LOGE(TAG, "FB-SIZE: %lu != %lu", (unsigned long)frame_buffer_event->len, (unsigned long)cam_obj->fb_size);
                             }
                         }
                         //send frame
@@ -245,8 +247,12 @@ static esp_err_t cam_dma_config(const camera_config_t *config)
     cam_obj->dma_node_cnt = (cam_obj->dma_buffer_size) / cam_obj->dma_node_buffer_size; // Number of DMA nodes
     cam_obj->frame_copy_cnt = cam_obj->recv_size / cam_obj->dma_half_buffer_size; // Number of interrupted copies, ping-pong copy
 
-    ESP_LOGI(TAG, "buffer_size: %d, half_buffer_size: %d, node_buffer_size: %d, node_cnt: %d, total_cnt: %d", 
-             cam_obj->dma_buffer_size, cam_obj->dma_half_buffer_size, cam_obj->dma_node_buffer_size, cam_obj->dma_node_cnt, cam_obj->frame_copy_cnt);
+    ESP_LOGI(TAG, "buffer_size: %u, half_buffer_size: %u, node_buffer_size: %u, node_cnt: %u, total_cnt: %u", 
+         (unsigned int)cam_obj->dma_buffer_size, 
+         (unsigned int)cam_obj->dma_half_buffer_size, 
+         (unsigned int)cam_obj->dma_node_buffer_size, 
+         (unsigned int)cam_obj->dma_node_cnt, 
+         (unsigned int)cam_obj->frame_copy_cnt);
 
     cam_obj->dma_buffer = NULL;
     cam_obj->dma = NULL;
@@ -275,14 +281,14 @@ static esp_err_t cam_dma_config(const camera_config_t *config)
         cam_obj->frames[x].dma = NULL;
         cam_obj->frames[x].fb_offset = 0;
         cam_obj->frames[x].en = 0;
-        ESP_LOGI(TAG, "Allocating %d Byte frame buffer in %s", alloc_size, _caps & MALLOC_CAP_SPIRAM ? "PSRAM" : "OnBoard RAM");
+        ESP_LOGI(TAG, "Allocating %u Byte frame buffer in %s", (unsigned int)alloc_size, _caps & MALLOC_CAP_SPIRAM ? "PSRAM" : "OnBoard RAM");
         cam_obj->frames[x].fb.buf = (uint8_t *)heap_caps_malloc(alloc_size, _caps);
         CAM_CHECK(cam_obj->frames[x].fb.buf != NULL, "frame buffer malloc failed", ESP_FAIL);
         if (cam_obj->psram_mode) {
             //align PSRAM buffer. TODO: save the offset so proper address can be freed later
             cam_obj->frames[x].fb_offset = dma_align - ((uint32_t)cam_obj->frames[x].fb.buf & (dma_align - 1));
             cam_obj->frames[x].fb.buf += cam_obj->frames[x].fb_offset;
-            ESP_LOGI(TAG, "Frame[%d]: Offset: %u, Addr: 0x%08X", x, cam_obj->frames[x].fb_offset, (uint32_t)cam_obj->frames[x].fb.buf);
+            ESP_LOGI(TAG, "Frame[%d]: Offset: %u, Addr: 0x%08X", x, (unsigned int)cam_obj->frames[x].fb_offset, (unsigned int)(uint32_t)cam_obj->frames[x].fb.buf);
             cam_obj->frames[x].dma = allocate_dma_descriptors(cam_obj->dma_node_cnt, cam_obj->dma_node_buffer_size, cam_obj->frames[x].fb.buf);
             CAM_CHECK(cam_obj->frames[x].dma != NULL, "frame dma malloc failed", ESP_FAIL);
         }
@@ -292,8 +298,7 @@ static esp_err_t cam_dma_config(const camera_config_t *config)
     if (!cam_obj->psram_mode) {
         cam_obj->dma_buffer = (uint8_t *)heap_caps_malloc(cam_obj->dma_buffer_size * sizeof(uint8_t), MALLOC_CAP_DMA);
         if(NULL == cam_obj->dma_buffer) {
-            ESP_LOGE(TAG,"%s(%d): DMA buffer %d Byte malloc failed, the current largest free block:%d Byte", __FUNCTION__, __LINE__, 
-                     cam_obj->dma_buffer_size, heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
+            ESP_LOGE(TAG, "%s(%d): DMA buffer %u Byte malloc failed, the current largest free block:%u Byte", __FUNCTION__, __LINE__, (unsigned int)cam_obj->dma_buffer_size, (unsigned int)heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
             return ESP_FAIL;
         }
 

@@ -122,7 +122,7 @@ static camera_config_t camera_config = {
     .pin_pclk = CAM_PIN_PCLK,
 
     //XCLK 20MHz or 10MHz for OV2640 double FPS (Experimental)
-    .xclk_freq_hz = 20000000,
+    .xclk_freq_hz = 10000000,
     .ledc_timer = LEDC_TIMER_0,
     .ledc_channel = LEDC_CHANNEL_0,
 
@@ -138,7 +138,7 @@ static esp_err_t init_camera()
 {
     //initialize the camera
     if(CAM_PIN_PWDN != -1){
-        gpio_pad_select_gpio(CAM_PIN_PWDN);
+        esp_rom_gpio_pad_select_gpio(CAM_PIN_PWDN);
         /* Set the GPIO as a push/pull output for LED */
         gpio_set_direction(CAM_PIN_PWDN, GPIO_MODE_OUTPUT);
         gpio_set_level(CAM_PIN_PWDN, 0);
@@ -146,7 +146,8 @@ static esp_err_t init_camera()
     esp_err_t err = esp_camera_init(&camera_config);
     if (err != ESP_OK)
     {
-        ESP_LOGE(TAG, "Camera Init Failed");
+        ESP_LOGE(TAG, "Camera Init Failed with error 0x%x", err);
+	ESP_LOGI(TAG, "Camera Pin Configuration: XCLK=%d, SIOD=%d, SIOC=%d, PCLK=%d",CAM_PIN_XCLK, CAM_PIN_SIOD, CAM_PIN_SIOC, CAM_PIN_PCLK);
         return err;
     }
      mutexCam = xSemaphoreCreateMutex();
@@ -234,9 +235,9 @@ esp_err_t jpg_stream_httpd_handler(httpd_req_t *req){
         int64_t frame_time = fr_end - last_frame;
         last_frame = fr_end;
         frame_time /= 1000;
-        ESP_LOGI(TAG, "MJPG: %uKB %ums (%.1ffps)",
-            (uint32_t)(_jpg_buf_len/1024),
-            (uint32_t)frame_time, 1000.0 / (uint32_t)frame_time);
+        ESP_LOGI(TAG, "MJPG: %luKB %lums (%.1ffps)",
+            (unsigned long)(_jpg_buf_len/1024),
+            (unsigned long)frame_time, 1000.0 / (unsigned long)frame_time);
     }
 
     last_frame = 0;

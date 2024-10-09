@@ -23,7 +23,7 @@
 #include "esp_system.h"
 #if ESP_IDF_VERSION_MAJOR >= 4 // IDF 4+
 #if CONFIG_IDF_TARGET_ESP32 // ESP32/PICO-D4
-#include "esp32/spiram.h"
+#include "esp_psram.h"
 #elif CONFIG_IDF_TARGET_ESP32S2
 #include "esp32s2/spiram.h"
 #elif CONFIG_IDF_TARGET_ESP32S3

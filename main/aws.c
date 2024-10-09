@@ -376,14 +376,14 @@ bool urlTrigger = false;
 
 void initGpio()
 {
-     gpio_pad_select_gpio(BUTTON);
+     esp_rom_gpio_pad_select_gpio(BUTTON);
     gpio_set_direction(BUTTON, GPIO_MODE_INPUT);
     gpio_pulldown_en(BUTTON);
     gpio_pullup_dis(BUTTON);
 
-    gpio_pad_select_gpio(RED_LED_GPIO);
-    gpio_pad_select_gpio(YELLOW_LED_GPIO);
-    gpio_pad_select_gpio(GREEN_LED_GPIO);
+    esp_rom_gpio_pad_select_gpio(RED_LED_GPIO);
+    esp_rom_gpio_pad_select_gpio(YELLOW_LED_GPIO);
+    esp_rom_gpio_pad_select_gpio(GREEN_LED_GPIO);
     /* Set the GPIO as a push/pull output for LED */
     gpio_set_direction(RED_LED_GPIO, GPIO_MODE_OUTPUT);
     gpio_set_direction(YELLOW_LED_GPIO, GPIO_MODE_OUTPUT);
